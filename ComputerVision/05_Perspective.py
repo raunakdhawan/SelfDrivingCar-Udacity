@@ -28,26 +28,27 @@ def corners_unwarp(img, nx, ny, mtx, dist):
      ret, corners = cv2.findChessboardCorners(dst_gray, (8, 6), None)
     # 4) If corners found: 
      if ret == True:
-          # a) draw corners
-          # plt.imshow(dst)
-          # for corner in corners:
-          #      plt.plot(corner[0][0], corner[0][1], '.')
-          # plt.show()
-            # b) define 4 source points src = np.float32([[,],[,],[,],[,]])
-                 #Note: you could pick any four of the detected corners 
-                 # as long as those four corners define a rectangle
-                 #One especially smart way to do this would be to use four well-chosen
-                 # corners that were automatically detected during the undistortion steps
-                 #We recommend using the automatic detection of corners in your code
-          source_corners = np.float32([corners[0],corners[7],corners[47],corners[40]])
-            # c) define 4 destination points dst = np.float32([[,],[,],[,],[,]])
-          dst_corners = np.float32([[100,100],[1200,100],[1200,850],[100,850]])
+          # If we found corners, draw them! (just for fun)
+          cv2.drawChessboardCorners(dst, (nx, ny), corners, ret)
+          # Choose offset from image corners to plot detected corners
+          # This should be chosen to present the result at the proper aspect ratio
+          # My choice of 100 pixels is not exact, but close enough for our purpose here
+          offset = 100 # offset for dst points
+          # Grab the image shape
+          img_size = (dst_gray.shape[1], dst_gray.shape[0])
 
-            # d) use cv2.getPerspectiveTransform() to get M, the transform matrix
-          M = cv2.getPerspectiveTransform(source_corners, dst_corners)
-            # e) use cv2.warpPerspective() to warp your image to a top-down view
-          img_size = (img.shape[1], img.shape[0])
-          warped = cv2.warpPerspective(img, M, img_size, flags=cv2.INTER_LINEAR)
+          # For source points I'm grabbing the outer four detected corners
+          src = np.float32([corners[0], corners[nx-1], corners[-1], corners[-nx]])
+          # For destination points, I'm arbitrarily choosing some points to be
+          # a nice fit for displaying our warped result 
+          # again, not exact, but close enough for our purposes
+          dst = np.float32([[offset, offset], [img_size[0]-offset, offset], 
+                                        [img_size[0]-offset, img_size[1]-offset], 
+                                        [offset, img_size[1]-offset]])
+          # Given src and dst points, calculate the perspective transform matrix
+          M = cv2.getPerspectiveTransform(src, dst)
+          # Warp the image using OpenCV warpPerspective()
+          warped = cv2.warpPerspective(dst_gray, M, img_size)
      return warped, M
 
 top_down, perspective_M = corners_unwarp(img, nx, ny, mtx, dist)
